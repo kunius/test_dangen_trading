@@ -1,0 +1,5 @@
+start_datatime = 2017-06-06 09:00:00
+end_datatime = 2019-10-24 16:00:00
+adjust = 1
+[30s] = SHFE.rb2001
+
