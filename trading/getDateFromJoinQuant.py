@@ -12,10 +12,10 @@ df = get_bars('RB9999.XSGE', 10000000, unit='1m',fields=['date','open','high','l
 for index, row in df.iterrows():
     c.execute("insert into main (bob,eob,high,low,open,close) values ('%s','%s','%d','%d','%d','%d')" % (row['date'].strftime("%Y-%m-%d %H:%M:%S"),row['date'].strftime("%Y-%m-%d %H:%M:%S"),
               row['high'],row['low'],row['open'],row['close']))
-    conn.commit()
+
     # a = row['date'].strftime("%Y-%m-%d %H:%M:%S")
     # print(a)
-
+conn.commit()
 
 c.close()
 conn.close()
