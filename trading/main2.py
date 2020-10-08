@@ -1,6 +1,7 @@
 # coding=utf-8
 from __future__ import print_function, absolute_import, unicode_literals
 from vv_backtest.base import *
+#from gm.api import *
 from pylab import *
 import time
 import sys
@@ -25,7 +26,7 @@ def init(context):
     context.query_tick_bar = {}
 
     account_id='e2310149-e322-11e9-a20c-00163e0a4100'
-    context.symbol = 'SHFE.rb2001'
+    context.symbol = 'SHFE.rb2010'
     context.anaklines=[]
     curr_time=time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
     subscribe(symbols=context.symbol, frequency='tick')
@@ -370,7 +371,7 @@ if __name__ == '__main__':
         mode=MODE_BACKTEST,
         token='86b951b2035896a8c3813a328f8a575b504948be',
         backtest_start_time='2019-06-06 09:00:00',
-        backtest_end_time='2019-10-24 16:00:00',
+        backtest_end_time='2020-10-24 16:00:00',
         backtest_adjust=ADJUST_PREV,
         backtest_initial_cash=10000,
         backtest_commission_ratio=0.0001,

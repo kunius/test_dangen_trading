@@ -28,7 +28,7 @@ def init(context):
     context.klines = []
 
     #订阅行情
-    subscribe("SHFE.rb2001",'60s')
+    subscribe("RB9999",'tick')
 
 
 def on_tick(context,tick):

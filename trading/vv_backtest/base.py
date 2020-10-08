@@ -23,6 +23,8 @@ is_cash_day = True   #是否画资金曲线
 is_cash_trade = False  #是否画交易曲线
 is_save_figure = False
 is_record = False   # 是否记录参数和回测结果
+start_data = datetime.datetime.strptime('2018-01-01','%Y-%m-%d')
+end_data = datetime.datetime.strptime('2018-12-08','%Y-%m-%d')
 
 
 class myThread (threading.Thread):
@@ -35,7 +37,8 @@ class myThread (threading.Thread):
         global cash_day
         global tick
 
-        con=sqlite3.connect('D:\\sqlite\\'+self.symbol+self.frequency+'.db')
+        #con=sqlite3.connect('C:\\sqlite\\'+self.symbol+self.frequency+'.db')
+        con=sqlite3.connect('C:\\sqlite\\'+'RB9999'+self.frequency+'.db')
         cursor = con.cursor()
         data = cursor.execute('select * from main')
         if self.frequency == 'tick': # 分时数据
@@ -45,13 +48,22 @@ class myThread (threading.Thread):
 
                 tick['symbol'] = self.symbol
                 date_created_at = _getDatetime(row[1])
+                if date_created_at < start_data or date_created_at > end_data:
+                    continue
                 if hasattr(tick,'created_at'):
                     if tick['created_at'].date() != date_created_at.date():
                         cash_day[tick['created_at'].strftime("%Y-%m-%d")] = context.account().current_cash
                 tick['created_at'] = date_created_at
-                tick['high'] = row[2]
-                tick['low'] = row[3]
-                tick['open'] = row[4]
+                # tick['high'] = row[2]
+                # tick['low'] = row[3]
+                # tick['open'] = row[4]
+                # tick['price'] = row[5]
+                tick['price'] = row[4]
+                mainpy.on_tick(context,tick)
+                tick['price'] = row[3]
+                mainpy.on_tick(context,tick)
+                tick['price'] = row[2]
+                mainpy.on_tick(context,tick)
                 tick['price'] = row[5]
                 mainpy.on_tick(context,tick)
                 _computer_account(context,tick)
@@ -126,7 +138,7 @@ def run(strategy_id='3dfcba6c-e03e-11e9-8ee1-00ff5e0b76d41',
             x.append(datetime.datetime.strptime(key,"%Y-%m-%d"))
 
         #plt.xticks(_getListFromList(10,x),cash_day.keys(), color='blue', rotation=30)  # 此处locs参数与X值数组相同
-        plt.xticks(_getListFromList(10,x),_getListFromList(10,list(cash_day.keys())), color='blue', rotation=30)  # 此处locs参数与X值数组相同
+        plt.xticks(_getListFromList(10,x),_getListFromList(10,list(cash_day.keys())), color='blue', rotation=90)  # 此处locs参数与X值数组相同
         plt.plot(x,list(cash_day.values()),color='r',marker='+')
         plt.show()
 

@@ -1,9 +1,7 @@
 # coding=utf-8
 from __future__ import print_function, absolute_import, unicode_literals
 import time
-import numpy as np
-import pandas as pd
-from gm.api import *
+from vv_backtest.base import *
 import matplotlib.pyplot as plt
 from pylab import *
 import copy
@@ -25,7 +23,7 @@ def init(context):
     context.find_index = 0
 
     account_id='e2310149-e322-11e9-a20c-00163e0a4100'
-    context.symbol = 'SHFE.rb2001'
+    context.symbol = 'RB9999'
     context.anaklines=[]
     curr_time=time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
     subscribe(symbols=context.symbol, frequency='tick')
@@ -360,6 +358,6 @@ if __name__ == '__main__':
         backtest_start_time='2019-06-06 09:00:00',
         backtest_end_time='2019-10-24 16:00:00',
         backtest_adjust=ADJUST_PREV,
-        backtest_initial_cash=5000,
+        backtest_initial_cash=500000000,
         backtest_commission_ratio=0.0001,
         backtest_slippage_ratio=0.0001)
