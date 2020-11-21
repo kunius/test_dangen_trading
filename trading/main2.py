@@ -1,7 +1,6 @@
 # coding=utf-8
 from __future__ import print_function, absolute_import, unicode_literals
 from vv_backtest.base import *
-#from gm.api import *
 from pylab import *
 import time
 import sys
@@ -26,7 +25,7 @@ def init(context):
     context.query_tick_bar = {}
 
     account_id='e2310149-e322-11e9-a20c-00163e0a4100'
-    context.symbol = 'SHFE.rb2010'
+    context.symbol = 'SHFE.rb2001'
     context.anaklines=[]
     curr_time=time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
     subscribe(symbols=context.symbol, frequency='tick')
@@ -243,6 +242,9 @@ def analyze_one(context,oneline,history):
                         unfinished_orders = get_unfinished_orders()
                         if (not positions) and (not unfinished_orders):
                             print("建多单")
+                            # data=order_volume(context.symbol, volume=1, side=OrderSide_Sell, order_type=OrderType_Market, position_effect=PositionEffect_Open,
+                            #              price=round(context.anaklines[find_index]['min']),
+                            #              order_duration=OrderDuration_Unknown, order_qualifier=OrderQualifier_Unknown)
                             data=order_volume(context.symbol, volume=1, side=OrderSide_Sell, order_type=OrderType_Market, position_effect=PositionEffect_Open,
                                          price=round(context.anaklines[find_index]['min']),
                                          order_duration=OrderDuration_Unknown, order_qualifier=OrderQualifier_Unknown)
@@ -267,6 +269,9 @@ def analyze_one(context,oneline,history):
                         unfinished_orders = get_unfinished_orders()
                         if (not positions) and (not unfinished_orders):
                             print("建空单")
+                            # data=order_volume(context.symbol,volume=1,side=OrderSide_Buy,order_type=OrderType_Market,position_effect=PositionEffect_Open,
+                            #              price=round(context.anaklines[find_index]['max']),
+                            #              order_duration=OrderDuration_Unknown,order_qualifier=OrderQualifier_Unknown)
                             data=order_volume(context.symbol,volume=1,side=OrderSide_Buy,order_type=OrderType_Market,position_effect=PositionEffect_Open,
                                          price=round(context.anaklines[find_index]['max']),
                                          order_duration=OrderDuration_Unknown,order_qualifier=OrderQualifier_Unknown)
@@ -336,12 +341,16 @@ def on_tick(context,tick):
             if status == '上涨回调': # 多单
                 if (context.query_tick_bar['high'] >= price_min+50) or (context.query_tick_bar['low'] <= price_min-50): #止损止盈
                     print("平多单前")
+                    # order_target_percent(symbol=context.symbol, percent=0, order_type=OrderType_Market,
+                    #                      position_side=PositionSide_Short)  #平仓
                     order_target_percent(symbol=context.symbol, percent=0, order_type=OrderType_Market,
                                          position_side=PositionSide_Short)  #平仓
                     print("平完多单")
             else: # 空单
                 if (context.query_tick_bar['high'] >= price_max+50) or (context.query_tick_bar['low'] <= price_max-50): #止损止盈
                     print("平空单前")
+                    # order_target_percent(symbol=context.symbol, percent=0, order_type=OrderType_Market,
+                    #                      position_side=PositionSide_Long)  #平仓
                     order_target_percent(symbol=context.symbol, percent=0, order_type=OrderType_Market,
                                          position_side=PositionSide_Long)  #平仓
                     print("平完空单")
@@ -373,7 +382,7 @@ if __name__ == '__main__':
         backtest_start_time='2019-06-06 09:00:00',
         backtest_end_time='2020-10-24 16:00:00',
         backtest_adjust=ADJUST_PREV,
-        backtest_initial_cash=10000,
+        backtest_initial_cash=100000,
         backtest_commission_ratio=0.0001,
         backtest_slippage_ratio=0.0001)
 

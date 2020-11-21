@@ -63,7 +63,10 @@ class Account(MyObject):
 class Context(MyObject):
     def __init__(self,cash):
         self.__account = Account(cash)
+        self.__account1 = Account(cash)
     def account(self, account_id=''):
         return self.__account
+    def account1(self, account_id=''):
+        return self.__account1
     def update_account(self):
         pass

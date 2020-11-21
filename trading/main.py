@@ -5,6 +5,7 @@ from vv_backtest.base import *
 import matplotlib.pyplot as plt
 from pylab import *
 import copy
+import sys
 
 print("原始 策略")
 
@@ -23,7 +24,7 @@ def init(context):
     context.find_index = 0
 
     account_id='e2310149-e322-11e9-a20c-00163e0a4100'
-    context.symbol = 'RB9999'
+    context.symbol = 'SHFE.rb2001'
     context.anaklines=[]
     curr_time=time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
     subscribe(symbols=context.symbol, frequency='tick')

@@ -1,10 +1,13 @@
 import importlib
 import datetime
 from vv_backtest.storage import *
-from vv_backtest.enum import *
+from vv_backtest.vv_enum import *
 import sqlite3
 import threading
 from pylab import *
+import socket
+import time
+import json
 
 #变量区
 MODE_BACKTEST = 0
@@ -19,12 +22,12 @@ count_ping = 0
 count_win = 0
 is_thread_stop = False
 
-is_cash_day = True   #是否画资金曲线
-is_cash_trade = False  #是否画交易曲线
+is_cash_day = False   #是否画资金曲线
+is_cash_trade = True  #是否画交易曲线
 is_save_figure = False
 is_record = False   # 是否记录参数和回测结果
-start_data = datetime.datetime.strptime('2018-01-01','%Y-%m-%d')
-end_data = datetime.datetime.strptime('2018-12-08','%Y-%m-%d')
+start_data = datetime.datetime.strptime('2017-01-01','%Y-%m-%d')
+end_data = datetime.datetime.strptime('2018-01-01','%Y-%m-%d')
 
 
 class myThread (threading.Thread):
@@ -37,18 +40,29 @@ class myThread (threading.Thread):
         global cash_day
         global tick
 
-        #con=sqlite3.connect('C:\\sqlite\\'+self.symbol+self.frequency+'.db')
-        con=sqlite3.connect('C:\\sqlite\\'+'RB9999'+self.frequency+'.db')
-        cursor = con.cursor()
-        data = cursor.execute('select * from main')
+        HOST = 'localhost'
+        PORT = 10888
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect((HOST, PORT))
+
         if self.frequency == 'tick': # 分时数据
-            for row in data:
+            while True:
                 if is_thread_stop: #是否要停止回测
                     break
+
+                data = s.recv(512)
+                if not data:
+                    print("server closed when recv")
+                    s.close()
+                    break
+
+                row = json.loads(data.decode("utf-8"))
+                print('Receve from server:\n', row)
 
                 tick['symbol'] = self.symbol
                 date_created_at = _getDatetime(row[1])
                 if date_created_at < start_data or date_created_at > end_data:
+                    s.sendall("yes".encode("utf-8"))
                     continue
                 if hasattr(tick,'created_at'):
                     if tick['created_at'].date() != date_created_at.date():
@@ -68,10 +82,20 @@ class myThread (threading.Thread):
                 mainpy.on_tick(context,tick)
                 _computer_account(context,tick)
 
+                s.sendall("yes".encode("utf-8"))
         elif self.frequency == '60s':  # 60s 数据
-            for row in data:
+            while True:
                 if is_thread_stop:  # 是否要停止回测
                     break
+
+                data = s.recv(512)
+                if not data:
+                    print("server closed when recv")
+                    s.close
+                    break
+
+                row = json.loads(data.decode("utf-8"))
+                print('Receve from server:\n', row)
 
                 tick['symbol'] = self.symbol
                 bob = datetime.datetime.strptime(row[1],'%Y-%m-%d %H:%M:%S')
@@ -91,6 +115,8 @@ class myThread (threading.Thread):
                 bar.append(tick)
                 mainpy.on_bar(context,bar)
                 _computer_account(context, tick)
+
+                s.sendall("yes".encode("utf-8"))
         else:# 其他 K 线
             pass
         plt.close()
@@ -126,7 +152,8 @@ def run(strategy_id='3dfcba6c-e03e-11e9-8ee1-00ff5e0b76d41',
     if is_cash_trade:
         plt.ioff()
         plt.figure(9)
-        plt.scatter(range(1, len(cash_history) + 1), cash_history, color='r', marker='+')
+        #plt.scatter(range(1, len(cash_history) + 1), cash_history, color='r', marker='+')
+        plt.plot(range(1, len(cash_history) + 1), cash_history, color='r', marker='+')
         plt.show()
 
     #按天画资金图
