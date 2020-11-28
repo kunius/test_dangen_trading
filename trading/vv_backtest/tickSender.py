@@ -10,8 +10,8 @@ import datetime
 HOST = ''
 PORT = 10888
 connections = []
-start_data = datetime.datetime.strptime('2017-01-01','%Y-%m-%d')
-end_data = datetime.datetime.strptime('2018-01-01','%Y-%m-%d')
+start_data = datetime.datetime.strptime('2020-01-01','%Y-%m-%d')
+end_data = datetime.datetime.strptime('2021-01-01','%Y-%m-%d')
 
 def server_connect():
     con = sqlite3.connect('C:\\sqlite\\' + 'RB9999' + 'tick' + '.db')

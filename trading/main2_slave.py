@@ -10,7 +10,7 @@ import vv_backtest.utils
 print("原始 反向 策略")
 configPath = 'c:/main2.json'
 tradeResultKey = 'trade_result'
-#vv_backtest.utils.writeInfoToJson(configPath, [tradeResultKey], [[0,0,0,0,0,0,0,0]])
+vv_backtest.utils.writeInfoToJson(configPath, [tradeResultKey], [[0,0,0,0,0,0,0,0]])
 # a = vv_backtest.utils.readInfoFromJson(configPath, "trade_result")
 # a = vv_backtest.utils.updateInfoToJson(configPath, "trade_result", 1)
 # 画图部分
@@ -250,14 +250,11 @@ def analyze_one(context,oneline,history):
                             # data=order_volume(context.symbol, volume=1, side=OrderSide_Sell, order_type=OrderType_Market, position_effect=PositionEffect_Open,
                             #              price=round(context.anaklines[find_index]['min']),
                             #              order_duration=OrderDuration_Unknown, order_qualifier=OrderQualifier_Unknown)
-                            if willTrade():
-                                data=order_volume(context.symbol, volume=1, side=OrderSide_Sell, order_type=OrderType_Market, position_effect=PositionEffect_Open,
-                                             price=round(context.anaklines[find_index]['min']),
-                                             order_duration=OrderDuration_Unknown, order_qualifier=OrderQualifier_Unknown)
-                                context.find_index = copy.deepcopy(context.anaklines[find_index])
-                            else:
-                                print("no trade this time")
+                            data=order_volume(context.symbol, volume=1, side=OrderSide_Sell, order_type=OrderType_Market, position_effect=PositionEffect_Open,
+                                         price=round(context.anaklines[find_index]['min']),
+                                         order_duration=OrderDuration_Unknown, order_qualifier=OrderQualifier_Unknown)
                             print("建完多单")
+                            context.find_index = copy.deepcopy(context.anaklines[find_index])
                 else: # 结束上涨回调上行 ，清空，重新开始
                     for index in range(-1, -9, -1):
                         context.anaklines[index]['status'] = '不定'
@@ -280,14 +277,11 @@ def analyze_one(context,oneline,history):
                             # data=order_volume(context.symbol,volume=1,side=OrderSide_Buy,order_type=OrderType_Market,position_effect=PositionEffect_Open,
                             #              price=round(context.anaklines[find_index]['max']),
                             #              order_duration=OrderDuration_Unknown,order_qualifier=OrderQualifier_Unknown)
-                            if willTrade():
-                                data=order_volume(context.symbol,volume=1,side=OrderSide_Buy,order_type=OrderType_Market,position_effect=PositionEffect_Open,
-                                             price=round(context.anaklines[find_index]['max']),
-                                             order_duration=OrderDuration_Unknown,order_qualifier=OrderQualifier_Unknown)
-                                context.find_index = copy.deepcopy(context.anaklines[find_index])
-                            else:
-                                print("no trade this time")
+                            data=order_volume(context.symbol,volume=1,side=OrderSide_Buy,order_type=OrderType_Market,position_effect=PositionEffect_Open,
+                                         price=round(context.anaklines[find_index]['max']),
+                                         order_duration=OrderDuration_Unknown,order_qualifier=OrderQualifier_Unknown)
                             print("建完空单")
+                            context.find_index = copy.deepcopy(context.anaklines[find_index])
                 else: # 结束下跌回调下行
                     for index in range(-1, -9, -1):
                         context.anaklines[index]['status'] = '不定'
@@ -356,6 +350,11 @@ def on_tick(context,tick):
                     #                      position_side=PositionSide_Short)  #平仓
                     order_target_percent(symbol=context.symbol, percent=0, order_type=OrderType_Market,
                                          position_side=PositionSide_Short)  #平仓
+                    if context.query_tick_bar['high'] >= price_min+50:
+                        vv_backtest.utils.updateInfoToJson(configPath, tradeResultKey, 0)
+                    elif context.query_tick_bar['low'] <= price_min-50:
+                        vv_backtest.utils.updateInfoToJson(configPath, tradeResultKey, 1)
+
                     print("平完多单")
             else: # 空单
                 if (context.query_tick_bar['high'] >= price_max+50) or (context.query_tick_bar['low'] <= price_max-50): #止损止盈
@@ -364,6 +363,11 @@ def on_tick(context,tick):
                     #                      position_side=PositionSide_Long)  #平仓
                     order_target_percent(symbol=context.symbol, percent=0, order_type=OrderType_Market,
                                          position_side=PositionSide_Long)  #平仓
+                    if context.query_tick_bar['high'] >= price_max+50:
+                        vv_backtest.utils.updateInfoToJson(configPath, tradeResultKey, 1)
+                    elif context.query_tick_bar['low'] <= price_max-50:
+                        vv_backtest.utils.updateInfoToJson(configPath, tradeResultKey, 0)
+
                     print("平完空单")
         elif unfinished_orders: # 如果 存在未成交的挂单
             if status == '上涨回调': # 挂的多单
@@ -384,16 +388,9 @@ def on_tick(context,tick):
 def on_bar(context, bar):
     analyze_one_with_figure(context,bar,False)
 
-def willTrade():
-    result = vv_backtest.utils.readInfoFromJson(configPath, tradeResultKey)
-    totle = result[-1] + result[-2] + result[-3] + result[-4]
-    if totle>=3:
-        return  True
-    return False
-
 if __name__ == '__main__':
     run(strategy_id='3dfcba6c-e03e-11e9-8ee1-00ff5e0b76d41',
-        filename='main2.py',
+        filename='main2_slave.py',
         mode=MODE_BACKTEST,
         token='86b951b2035896a8c3813a328f8a575b504948be',
         backtest_start_time='2019-06-06 09:00:00',

@@ -22,12 +22,12 @@ count_ping = 0
 count_win = 0
 is_thread_stop = False
 
-is_cash_day = False   #是否画资金曲线
-is_cash_trade = True  #是否画交易曲线
+is_cash_day = True   #是否画资金曲线
+is_cash_trade = False  #是否画交易曲线
 is_save_figure = False
 is_record = False   # 是否记录参数和回测结果
 start_data = datetime.datetime.strptime('2017-01-01','%Y-%m-%d')
-end_data = datetime.datetime.strptime('2018-01-01','%Y-%m-%d')
+end_data = datetime.datetime.strptime('2021-01-01','%Y-%m-%d')
 
 
 class myThread (threading.Thread):
@@ -57,8 +57,6 @@ class myThread (threading.Thread):
                     break
 
                 row = json.loads(data.decode("utf-8"))
-                print('Receve from server:\n', row)
-
                 tick['symbol'] = self.symbol
                 date_created_at = _getDatetime(row[1])
                 if date_created_at < start_data or date_created_at > end_data:
