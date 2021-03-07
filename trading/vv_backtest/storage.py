@@ -67,3 +67,5 @@ class Context(MyObject):
         return self.__account
     def update_account(self):
         pass
+    def reset(self, cash):
+        self.__account = Account(cash)

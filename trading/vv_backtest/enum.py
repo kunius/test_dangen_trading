@@ -126,7 +126,7 @@ SEC_TYPE_OPTION = 5
 SEC_TYPE_CONFUTURE = 10
 
 #保证金
-cash_deposit = {'SHFE.rb2001':3500}
-service_charge = {'SHFE.rb2001':3.5}
-spread = {'SHFE.rb2001':1}
-spread_yingkui = {'SHFE.rb2001':10}
+cash_deposit = {'RB9999':3500}
+service_charge = {'RB9999':3.5}
+spread = {'RB9999':1}
+spread_yingkui = {'RB9999':10}

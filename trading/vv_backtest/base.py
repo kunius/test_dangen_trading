@@ -5,7 +5,7 @@ from vv_backtest.enum import *
 import sqlite3
 import threading
 from pylab import *
-
+import pickle # 保存模型用
 #变量区
 MODE_BACKTEST = 0
 ADJUST_PREV = 0
@@ -42,31 +42,46 @@ class myThread (threading.Thread):
         cursor = con.cursor()
         data = cursor.execute('select * from main')
         if self.frequency == 'tick': # 分时数据
-            for row in data:
-                if is_thread_stop: #是否要停止回测
-                    break
+            while True:
+                for row in data:
+                    if is_thread_stop: #是否要停止回测
+                        break
 
-                tick['symbol'] = self.symbol
-                date_created_at = _getDatetime(row[1])
-                if date_created_at < start_data or date_created_at > end_data:
-                    continue
-                if hasattr(tick,'created_at'):
-                    if tick['created_at'].date() != date_created_at.date():
-                        cash_day[tick['created_at'].strftime("%Y-%m-%d")] = context.account().current_cash
-                tick['created_at'] = date_created_at
-                # tick['high'] = row[2]
-                # tick['low'] = row[3]
-                # tick['open'] = row[4]
-                # tick['price'] = row[5]
-                tick['price'] = row[4]
-                mainpy.on_tick(context,tick)
-                tick['price'] = row[3]
-                mainpy.on_tick(context,tick)
-                tick['price'] = row[2]
-                mainpy.on_tick(context,tick)
-                tick['price'] = row[5]
-                mainpy.on_tick(context,tick)
-                _computer_account(context,tick)
+                    tick['symbol'] = self.symbol
+                    date_created_at = _getDatetime(row[1])
+                    if date_created_at < start_data or date_created_at > end_data:
+                        continue
+                    if hasattr(tick,'created_at'):
+                        if tick['created_at'].date() != date_created_at.date():
+                            cash_day[tick['created_at'].strftime("%Y-%m-%d")] = context.account().current_cash
+                    tick['created_at'] = date_created_at
+                    # tick['high'] = row[2]
+                    # tick['low'] = row[3]
+                    # tick['open'] = row[4]
+                    # tick['price'] = row[5]
+                    tick['price'] = row[4]
+                    mainpy.on_tick(context,tick)
+                    tick['price'] = row[3]
+                    mainpy.on_tick(context,tick)
+                    tick['price'] = row[2]
+                    mainpy.on_tick(context,tick)
+                    tick['price'] = row[5]
+                    mainpy.on_tick(context,tick)
+                    _computer_account(context,tick)
+
+                # 记录
+                with open('future-v0-q-learning.pickle', 'wb') as f:
+                    pickle.dump(dict(context.Q), f)
+                    print('model saved: ', datetime.datetime.now())
+
+                with open('q-learning-result.txt', 'a') as f:
+                    str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S') + " 总交易数: " + str(count_ping) + " 总赢数：" + str(count_win) + " 最后剩余：" +  str(cash_history[-1]) + " score:" + str(context.score) + '\r'
+                    f.write(str)
+
+                #清空，重新开始
+                clean()
+
+
 
         elif self.frequency == '60s':  # 60s 数据
             for row in data:
@@ -94,6 +109,26 @@ class myThread (threading.Thread):
         else:# 其他 K 线
             pass
         plt.close()
+
+def clean():
+    context.time_from = ''
+    context.time_to = ''
+    context.time_count = 0
+    context.time_high = 0
+    context.time_low = sys.maxsize
+
+    account_id='e2310149-e322-11e9-a20c-00163e0a4100'
+    context.symbol = 'RB9999'
+    context.anaklines=[]
+
+    context.before_state = []
+    context.before_action = 0
+    context.before_price = 0
+    context.score = 0
+
+    context.reset(500000000)
+
+
 def run(strategy_id='3dfcba6c-e03e-11e9-8ee1-00ff5e0b76d41',
     filename='main2.py',
     mode=MODE_BACKTEST,
