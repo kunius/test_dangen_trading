@@ -10,6 +10,8 @@ import vv_backtest.utils
 print("原始 反向 策略")
 configPath = 'c:/main2.json'
 tradeResultKey = 'trade_result'
+isPositive = False
+isTrade = True
 #vv_backtest.utils.writeInfoToJson(configPath, [tradeResultKey], [[0,0,0,0,0,0,0,0]])
 # a = vv_backtest.utils.readInfoFromJson(configPath, "trade_result")
 # a = vv_backtest.utils.updateInfoToJson(configPath, "trade_result", 1)
@@ -247,16 +249,25 @@ def analyze_one(context,oneline,history):
                         unfinished_orders = get_unfinished_orders()
                         if (not positions) and (not unfinished_orders):
                             print("建多单")
+                            initTrade()
+                            print("isTrade: ", isTrade)
+                            print("isPositive: ", isPositive)
                             # data=order_volume(context.symbol, volume=1, side=OrderSide_Sell, order_type=OrderType_Market, position_effect=PositionEffect_Open,
                             #              price=round(context.anaklines[find_index]['min']),
                             #              order_duration=OrderDuration_Unknown, order_qualifier=OrderQualifier_Unknown)
-                            if willTrade():
-                                data=order_volume(context.symbol, volume=1, side=OrderSide_Sell, order_type=OrderType_Market, position_effect=PositionEffect_Open,
-                                             price=round(context.anaklines[find_index]['min']),
-                                             order_duration=OrderDuration_Unknown, order_qualifier=OrderQualifier_Unknown)
+                            if isTrade:
+                                if isPositive:
+                                    data=order_volume(context.symbol, volume=1, side=OrderSide_Buy, order_type=OrderType_Market, position_effect=PositionEffect_Open,
+                                                 price=round(context.anaklines[find_index]['min']),
+                                                 order_duration=OrderDuration_Unknown, order_qualifier=OrderQualifier_Unknown)
+                                else:
+                                    data=order_volume(context.symbol, volume=1, side=OrderSide_Sell, order_type=OrderType_Market, position_effect=PositionEffect_Open,
+                                                 price=round(context.anaklines[find_index]['min']),
+                                                 order_duration=OrderDuration_Unknown, order_qualifier=OrderQualifier_Unknown)
                                 context.find_index = copy.deepcopy(context.anaklines[find_index])
                             else:
                                 print("no trade this time")
+                                add_cash_history_placeholder()
                             print("建完多单")
                 else: # 结束上涨回调上行 ，清空，重新开始
                     for index in range(-1, -9, -1):
@@ -277,16 +288,25 @@ def analyze_one(context,oneline,history):
                         unfinished_orders = get_unfinished_orders()
                         if (not positions) and (not unfinished_orders):
                             print("建空单")
+                            initTrade()
+                            print("isTrade: ", isTrade)
+                            print("isPositive: ", isPositive)
                             # data=order_volume(context.symbol,volume=1,side=OrderSide_Buy,order_type=OrderType_Market,position_effect=PositionEffect_Open,
                             #              price=round(context.anaklines[find_index]['max']),
                             #              order_duration=OrderDuration_Unknown,order_qualifier=OrderQualifier_Unknown)
-                            if willTrade():
-                                data=order_volume(context.symbol,volume=1,side=OrderSide_Buy,order_type=OrderType_Market,position_effect=PositionEffect_Open,
-                                             price=round(context.anaklines[find_index]['max']),
-                                             order_duration=OrderDuration_Unknown,order_qualifier=OrderQualifier_Unknown)
+                            if isTrade:
+                                if isPositive:
+                                    data=order_volume(context.symbol,volume=1,side=OrderSide_Sell,order_type=OrderType_Market,position_effect=PositionEffect_Open,
+                                                 price=round(context.anaklines[find_index]['max']),
+                                                 order_duration=OrderDuration_Unknown,order_qualifier=OrderQualifier_Unknown)
+                                else:
+                                    data=order_volume(context.symbol,volume=1,side=OrderSide_Buy,order_type=OrderType_Market,position_effect=PositionEffect_Open,
+                                                 price=round(context.anaklines[find_index]['max']),
+                                                 order_duration=OrderDuration_Unknown,order_qualifier=OrderQualifier_Unknown)
                                 context.find_index = copy.deepcopy(context.anaklines[find_index])
                             else:
                                 print("no trade this time")
+                                add_cash_history_placeholder()
                             print("建完空单")
                 else: # 结束下跌回调下行
                     for index in range(-1, -9, -1):
@@ -344,36 +364,27 @@ def on_tick(context,tick):
 
         positions = context.account().positions(symbol=context.symbol, side=None)
         unfinished_orders = get_unfinished_orders()
-        price_max = context.find_index['max']
-        price_min = context.find_index['min']
-        status = context.find_index['status']
         if positions: # 如果存在仓位
             order_cancel_all()
-            if status == '上涨回调': # 多单
-                if (context.query_tick_bar['high'] >= price_min+50) or (context.query_tick_bar['low'] <= price_min-50): #止损止盈
+            positionPrice = positions[0].price
+            if positions[0].side == PositionSide_Long: # 多单
+                if (context.query_tick_bar['high'] >= positionPrice+50) or (context.query_tick_bar['low'] <= positionPrice-50): #止损止盈
                     print("平多单前")
                     # order_target_percent(symbol=context.symbol, percent=0, order_type=OrderType_Market,
                     #                      position_side=PositionSide_Short)  #平仓
                     order_target_percent(symbol=context.symbol, percent=0, order_type=OrderType_Market,
-                                         position_side=PositionSide_Short)  #平仓
+                                         position_side=PositionSide_Long)  #平仓
                     print("平完多单")
             else: # 空单
-                if (context.query_tick_bar['high'] >= price_max+50) or (context.query_tick_bar['low'] <= price_max-50): #止损止盈
+                if (context.query_tick_bar['high'] >= positionPrice+50) or (context.query_tick_bar['low'] <= positionPrice-50): #止损止盈
                     print("平空单前")
                     # order_target_percent(symbol=context.symbol, percent=0, order_type=OrderType_Market,
                     #                      position_side=PositionSide_Long)  #平仓
                     order_target_percent(symbol=context.symbol, percent=0, order_type=OrderType_Market,
-                                         position_side=PositionSide_Long)  #平仓
+                                         position_side=PositionSide_Short)  #平仓
                     print("平完空单")
         elif unfinished_orders: # 如果 存在未成交的挂单
-            if status == '上涨回调': # 挂的多单
-                if (context.query_tick_bar['high'] >= price_max+6) or (context.query_tick_bar['low'] <= price_min-6): # 未成交，取消挂单
-                    order_cancel_all()
-                    print("取消多单挂单")
-            else:# 挂的空单
-                if (context.query_tick_bar['high'] >= price_max+6) or (context.query_tick_bar['low'] <= price_min-6): #未成交，取消挂单
-                    order_cancel_all()
-                    print("取消多空单挂单")
+            order_cancel_all()
         else: # 单子处理好了
             context.find_index = 0
 
@@ -384,12 +395,32 @@ def on_tick(context,tick):
 def on_bar(context, bar):
     analyze_one_with_figure(context,bar,False)
 
-def willTrade():
+def initTrade():
+    global isTrade
+    global isPositive
     result = vv_backtest.utils.readInfoFromJson(configPath, tradeResultKey)
-    totle = result[-1] + result[-2] + result[-3] + result[-4]
-    if totle>=3:
-        return  True
-    return False
+
+    # # isPositive
+    # if result[-5] != 9:
+    #     resultSum = result[-1] + result[-2] +result[-4] + result[-5] + result[-5]
+    #     if resultSum >= 4:
+    #         isPositive = False
+    #     elif resultSum <= 1:
+    #         isPositive = True
+
+    # isTrade
+    if isPositive:
+        if result[-1] == 1:
+            isTrade = False
+        elif result[-1] == 0:
+            isTrade = True
+    else:
+        resultSum = result[-1] + result[-2] + result[-4] + result[-5] + result[-5]
+        if resultSum < 9 and result[-1] == 1:
+            isTrade = True
+        else:
+            isTrade = False
+
 
 if __name__ == '__main__':
     run(strategy_id='3dfcba6c-e03e-11e9-8ee1-00ff5e0b76d41',

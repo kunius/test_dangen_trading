@@ -4,14 +4,21 @@ import  time
 import json
 import sqlite3
 import vv_backtest.base
+import vv_backtest.utils
 import datetime
 
 
 HOST = ''
 PORT = 10888
 connections = []
-start_data = datetime.datetime.strptime('2020-01-01','%Y-%m-%d')
+configPath = 'c:/main2.json'
+tradeResultKey = 'trade_result'
+tradeCountKey = 'trade_count'
+vv_backtest.utils.writeInfoToJson(configPath, [tradeResultKey, tradeCountKey], [[9,9,9,9,9,9,9,9], "00000"])
+start_data = datetime.datetime.strptime('2016-01-01','%Y-%m-%d')
 end_data = datetime.datetime.strptime('2021-01-01','%Y-%m-%d')
+# start_data = datetime.datetime.strptime('2019-07-01','%Y-%m-%d')
+# end_data = datetime.datetime.strptime('2019-12-01','%Y-%m-%d')
 
 def server_connect():
     con = sqlite3.connect('C:\\sqlite\\' + 'RB9999' + 'tick' + '.db')

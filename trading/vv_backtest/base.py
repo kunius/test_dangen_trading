@@ -22,13 +22,12 @@ count_ping = 0
 count_win = 0
 is_thread_stop = False
 
-is_cash_day = True   #是否画资金曲线
-is_cash_trade = False  #是否画交易曲线
+is_cash_day = False   #是否画资金曲线
+is_cash_trade = True  #是否画交易曲线
 is_save_figure = False
 is_record = False   # 是否记录参数和回测结果
-start_data = datetime.datetime.strptime('2017-01-01','%Y-%m-%d')
-end_data = datetime.datetime.strptime('2021-01-01','%Y-%m-%d')
-
+start_data = datetime.datetime.strptime('2000-01-01','%Y-%m-%d')
+end_data = datetime.datetime.strptime('2050-01-01','%Y-%m-%d')
 
 class myThread (threading.Thread):
     def __init__(self,symbol,frequency):
@@ -146,24 +145,42 @@ def run(strategy_id='3dfcba6c-e03e-11e9-8ee1-00ff5e0b76d41',
     print("总交易数："+str(count_ping))
     print("赢数："+str(count_win))
 
+    startFile = sys.argv[0]
+    figTitle = startFile[startFile.rfind("/") + 1:len(startFile) - 3]
+
     #按交易画资金图
     if is_cash_trade:
         plt.ioff()
         plt.figure(9)
+        plt.grid(True)
+        plt.title(figTitle)
+        x=[]
+        keys=[]
+        values=[]
+        for item in cash_history:
+            #x.append(datetime.datetime.strftime(item[0],"%Y-%m-%d"))
+            x.append(item[0].strftime("%Y-%m-%d"))
+            keys.append(item[0])
+            values.append(item[1])
+
+        #plt.xticks(_getListFromList(10,x),cash_day.keys(), color='blue', rotation=30)  # 此处locs参数与X值数组相同
+        plt.xticks(_getListFromList(1,keys), _getListFromList(1,x), color='blue', rotation=90)  # 此处locs参数与X值数组相同
         #plt.scatter(range(1, len(cash_history) + 1), cash_history, color='r', marker='+')
-        plt.plot(range(1, len(cash_history) + 1), cash_history, color='r', marker='+')
+        plt.plot(keys, values, color='r', marker='+')
         plt.show()
 
     #按天画资金图
     if is_cash_day:
         plt.ioff()
         plt.figure(9)
+        plt.grid(True)
+        plt.title(figTitle)
         x=[]
         for key in cash_day.keys():
             x.append(datetime.datetime.strptime(key,"%Y-%m-%d"))
 
         #plt.xticks(_getListFromList(10,x),cash_day.keys(), color='blue', rotation=30)  # 此处locs参数与X值数组相同
-        plt.xticks(_getListFromList(10,x),_getListFromList(10,list(cash_day.keys())), color='blue', rotation=90)  # 此处locs参数与X值数组相同
+        plt.xticks(_getListFromList(1,x),_getListFromList(1,list(cash_day.keys())), color='blue', rotation=90)  # 此处locs参数与X值数组相同
         plt.plot(x,list(cash_day.values()),color='r',marker='+')
         plt.show()
 
@@ -188,7 +205,12 @@ def order_target_percent(symbol, percent=0, order_type=OrderType_Market,
                 else:
                     side =PositionSide_Long
                 order_volume(symbol=position.symbol,volume=position.volume,side=side,order_type=OrderType_Market,position_effect=PositionEffect_Close)
-                cash_history.append(context.account().current_cash)
+                cash_history.append((position.time, context.account().current_cash))
+
+#加成交单，空的placeholder
+def add_cash_history_placeholder():
+    #cash_history.append((tick['created_at'], context.account().current_cash))
+    pass
 
 #建仓函数
 def order_volume(symbol, volume, side, order_type, position_effect,
