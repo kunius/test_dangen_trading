@@ -152,8 +152,8 @@ def get_state(now_price):
 
     for i in range(useItemCount):
         nowItem = context.anaklines[i - useItemCount]
-        retList.append(round(nowItem['high'] / maxPrice, 2))
-        retList.append(round(nowItem['low'] / maxPrice, 2))
+        retList.append(maxPrice - nowItem['high'])
+        retList.append(maxPrice - nowItem['low'])
     return tuple(retList)
 
 def get_reward(now_price):
@@ -237,8 +237,7 @@ def save_info(cash_history, count_ping, count_win):
                         + " shouxufei: " + str(context.account().shouxufei) + " score:" + str(context.score) + '\r'
             f.write(writh_str)
 
-def save_model():
-    return
+def save_model(count):
     with open('future-v0-q-learning.pickle', 'wb') as f:
         pickle.dump(dict(context.Q), f)
         print('model saved: ', datetime.datetime.now())

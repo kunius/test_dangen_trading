@@ -24,8 +24,8 @@ is_cash_day = True   #是否画资金曲线
 is_cash_trade = False  #是否画交易曲线
 is_save_figure = False
 is_record = False   # 是否记录参数和回测结果
-start_data = datetime.datetime.strptime('2018-01-01','%Y-%m-%d')
-end_data = datetime.datetime.strptime('2018-02-01','%Y-%m-%d')
+start_data = datetime.datetime.strptime('2017-01-01','%Y-%m-%d')
+end_data = datetime.datetime.strptime('2020-01-01','%Y-%m-%d')
 
 
 class myThread (threading.Thread):
@@ -80,7 +80,7 @@ class myThread (threading.Thread):
                 count_while = count_while + 1
                 print("count_while: ", count_while)
                 mainpy.save_info(cash_history, count_ping, count_win)
-                mainpy.save_model()
+                mainpy.save_model(count_while)
 
                 #清空，重新开始
                 clean()

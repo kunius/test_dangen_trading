@@ -282,6 +282,5 @@ def save_info(cash_history, count_ping, count_win):
                         + " shouxufei: " + str(context.account().shouxufei) + " score:" + str(context.score) + '\r'
             f.write(writh_str)
 
-def save_model():
-    return
+def save_model(count):
     context.DQN.save_model()
