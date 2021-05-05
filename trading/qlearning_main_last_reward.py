@@ -93,10 +93,10 @@ def start_qlearning(now_price):
 
     #开始qlearn
     lr, factor = 0.7, 0.95
-    reward = get_reward(now_price)
+    reward = get_reward2(now_price)
     before_action = context.before_action
     if before_action != 0: # 买买手续费点差
-        reward = reward - 80 - 20
+        reward = reward - 20 - 20
 
 
     context.Q[before_state][before_action] = (1 - lr) * context.Q[before_state][before_action] + lr * (reward + factor * max(context.Q[now_state]))
@@ -106,12 +106,12 @@ def start_qlearning(now_price):
     implement_as_action(a, now_price)
 
     # log
-    # if a != 0:
-    #     if context.still_count != 0:
-    #         print("still count: ", context.still_count)
-    #         context.still_count = 0
-    # else:
-    #     context.still_count = context.still_count + 1
+    if a != 0:
+        if context.still_count != 0:
+            print("still count: ", context.still_count)
+            context.still_count = 0
+    else:
+        context.still_count = context.still_count + 1
 
     context.before_state = now_state
     context.before_action = a
@@ -153,17 +153,6 @@ def get_state(now_price):
         retList.append(0)
 
     return tuple(retList)
-
-def get_reward(now_price):
-    positions = context.account().positions(symbol=context.symbol, side=None)
-    if positions:
-        positionPrice = positions[0].price
-        if positions[0].side == PositionSide_Long:  # 多单 = 1
-            return (now_price - context.before_price) * 10
-        else: # = 2
-            return (context.before_price - now_price) * 10
-    else:
-        return 0
 
 def get_reward2(now_price):
     positions = context.account().positions(symbol=context.symbol, side=None)
@@ -220,7 +209,7 @@ def ping_position():
 
 if __name__ == '__main__':
     run(strategy_id='3dfcba6c-e03e-11e9-8ee1-00ff5e0b76d41',
-        filename='qlearning_main.py',
+        filename='qlearning_main_last_reward.py',
         mode=MODE_BACKTEST,
         token='86b951b2035896a8c3813a328f8a575b504948be',
         backtest_start_time='2019-06-06 09:00:00',

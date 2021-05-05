@@ -128,5 +128,5 @@ SEC_TYPE_CONFUTURE = 10
 #保证金
 cash_deposit = {'RB9999':3500}
 service_charge = {'RB9999':3.5}
-spread = {'RB9999':1}
-spread_yingkui = {'RB9999':10}
+spread = {'RB9999':2}
+spread_yingkui = {'RB9999':20}

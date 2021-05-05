@@ -6,6 +6,7 @@ import sqlite3
 import threading
 from pylab import *
 import pickle # 保存模型用
+import sys
 #变量区
 MODE_BACKTEST = 0
 ADJUST_PREV = 0
@@ -24,7 +25,7 @@ is_cash_trade = False  #是否画交易曲线
 is_save_figure = False
 is_record = False   # 是否记录参数和回测结果
 start_data = datetime.datetime.strptime('2018-01-01','%Y-%m-%d')
-end_data = datetime.datetime.strptime('2018-12-08','%Y-%m-%d')
+end_data = datetime.datetime.strptime('2018-02-01','%Y-%m-%d')
 
 
 class myThread (threading.Thread):
@@ -38,19 +39,18 @@ class myThread (threading.Thread):
         global tick
 
         #con=sqlite3.connect('C:\\sqlite\\'+self.symbol+self.frequency+'.db')
-        con=sqlite3.connect('C:\\sqlite\\'+'RB9999'+self.frequency+'.db')
-        cursor = con.cursor()
-        data = cursor.execute('select * from main')
         if self.frequency == 'tick': # 分时数据
+            data = self.get_data_from_sql()
+
+            count_while = 0
             while True:
+                context.done = False
                 for row in data:
                     if is_thread_stop: #是否要停止回测
                         break
 
                     tick['symbol'] = self.symbol
                     date_created_at = _getDatetime(row[1])
-                    if date_created_at < start_data or date_created_at > end_data:
-                        continue
                     if hasattr(tick,'created_at'):
                         if tick['created_at'].date() != date_created_at.date():
                             cash_day[tick['created_at'].strftime("%Y-%m-%d")] = context.account().current_cash
@@ -61,54 +61,70 @@ class myThread (threading.Thread):
                     # tick['price'] = row[5]
                     tick['price'] = row[4]
                     mainpy.on_tick(context,tick)
+                    _computer_account(context,tick)
                     tick['price'] = row[3]
                     mainpy.on_tick(context,tick)
+                    _computer_account(context,tick)
                     tick['price'] = row[2]
                     mainpy.on_tick(context,tick)
+                    _computer_account(context,tick)
                     tick['price'] = row[5]
                     mainpy.on_tick(context,tick)
                     _computer_account(context,tick)
 
                 # 记录
-                with open('future-v0-q-learning.pickle', 'wb') as f:
-                    pickle.dump(dict(context.Q), f)
-                    print('model saved: ', datetime.datetime.now())
+                # with open('future-v0-q-learning.pickle', 'wb') as f:
+                #     pickle.dump(dict(context.Q), f)
+                #     print('model saved: ', datetime.datetime.now())
 
-                with open('q-learning-result.txt', 'a') as f:
-                    str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S') + " 总交易数: " + str(count_ping) + " 总赢数：" + str(count_win) + " 最后剩余：" +  str(cash_history[-1]) + " score:" + str(context.score) + '\r'
-                    f.write(str)
+                count_while = count_while + 1
+                print("count_while: ", count_while)
+                mainpy.save_info(cash_history, count_ping, count_win)
+                mainpy.save_model()
 
                 #清空，重新开始
                 clean()
 
+        # elif self.frequency == '60s':  # 60s 数据
+        #     for row in data:
+        #         if is_thread_stop:  # 是否要停止回测
+        #             break
+        #
+        #         tick['symbol'] = self.symbol
+        #         bob = datetime.datetime.strptime(row[1],'%Y-%m-%d %H:%M:%S')
+        #         eob = datetime.datetime.strptime(row[2],'%Y-%m-%d %H:%M:%S')
+        #
+        #         if hasattr(tick,'created_at'):
+        #             if tick['created_at'].date() != bob.date():
+        #                 cash_day[tick['created_at'].strftime("%Y-%m-%d")] = context.account().current_cash
+        #         tick['created_at'] = bob
+        #         tick['eob'] = eob
+        #         tick['high'] = row[3]
+        #         tick['low'] = row[4]
+        #         tick['price'] = row[6]
+        #         tick['close'] = row[6]
+        #
+        #         bar = []
+        #         bar.append(tick)
+        #         mainpy.on_bar(context,bar)
+        #         _computer_account(context, tick)
+        # else:# 其他 K 线
+        #     pass
+        # plt.close()
 
-
-        elif self.frequency == '60s':  # 60s 数据
-            for row in data:
-                if is_thread_stop:  # 是否要停止回测
-                    break
-
-                tick['symbol'] = self.symbol
-                bob = datetime.datetime.strptime(row[1],'%Y-%m-%d %H:%M:%S')
-                eob = datetime.datetime.strptime(row[2],'%Y-%m-%d %H:%M:%S')
-
-                if hasattr(tick,'created_at'):
-                    if tick['created_at'].date() != bob.date():
-                        cash_day[tick['created_at'].strftime("%Y-%m-%d")] = context.account().current_cash
-                tick['created_at'] = bob
-                tick['eob'] = eob
-                tick['high'] = row[3]
-                tick['low'] = row[4]
-                tick['price'] = row[6]
-                tick['close'] = row[6]
-
-                bar = []
-                bar.append(tick)
-                mainpy.on_bar(context,bar)
-                _computer_account(context, tick)
-        else:# 其他 K 线
-            pass
-        plt.close()
+    def get_data_from_sql(self):
+        retList = []
+        con = sqlite3.connect('C:\\sqlite\\' + 'RB9999' + self.frequency + '.db')
+        cursor = con.cursor()
+        data = cursor.execute('select * from main')
+        for row in data:
+            date_created_at = _getDatetime(row[1])
+            if date_created_at >= start_data and date_created_at <= end_data:
+                tick = row
+                retList.append(tick)
+        cursor.close()
+        con.close()
+        return retList
 
 def clean():
     context.time_from = ''
@@ -125,6 +141,17 @@ def clean():
     context.before_action = 0
     context.before_price = 0
     context.score = 0
+    context.learn_count = 0
+    context.has_ping = False
+
+    global count_ping
+    global count_win
+    global cash_history
+    global cash_day
+    count_ping = 0
+    count_win = 0
+    cash_history = []
+    cash_day = {}
 
     context.reset(500000000)
 
