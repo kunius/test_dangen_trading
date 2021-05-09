@@ -24,9 +24,6 @@ is_cash_day = True   #是否画资金曲线
 is_cash_trade = False  #是否画交易曲线
 is_save_figure = False
 is_record = False   # 是否记录参数和回测结果
-start_data = datetime.datetime.strptime('2017-01-01','%Y-%m-%d')
-end_data = datetime.datetime.strptime('2020-01-01','%Y-%m-%d')
-
 
 class myThread (threading.Thread):
     def __init__(self,symbol,frequency):
@@ -82,6 +79,9 @@ class myThread (threading.Thread):
                 mainpy.save_info(cash_history, count_ping, count_win)
                 mainpy.save_model(count_while)
 
+                if context.isTest: #测试只执行一遍
+                    break
+
                 #清空，重新开始
                 clean()
 
@@ -113,6 +113,8 @@ class myThread (threading.Thread):
         # plt.close()
 
     def get_data_from_sql(self):
+        start_data = context.start_data
+        end_data = context.end_data
         retList = []
         con = sqlite3.connect('C:\\sqlite\\' + 'RB9999' + self.frequency + '.db')
         cursor = con.cursor()

@@ -283,4 +283,5 @@ def save_info(cash_history, count_ping, count_win):
             f.write(writh_str)
 
 def save_model(count):
-    context.DQN.save_model()
+    if count % 100 == 0:
+        context.DQN.save_model()
