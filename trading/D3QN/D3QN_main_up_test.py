@@ -27,8 +27,8 @@ def init(context):
     context.done = False
     context.isTest = True
 
-    context.start_data = datetime.datetime.strptime('2016-01-01', '%Y-%m-%d')
-    context.end_data = datetime.datetime.strptime('2020-01-01', '%Y-%m-%d')
+    context.start_data = datetime.datetime.strptime('2020-01-01', '%Y-%m-%d')
+    context.end_data = datetime.datetime.strptime('2021-01-01', '%Y-%m-%d')
 
     account_id='e2310149-e322-11e9-a20c-00163e0a4100'
     context.symbol = 'RB9999'
@@ -36,14 +36,14 @@ def init(context):
 
     context.before_state = []
     context.before_action = 0
-    context.before_price = 0
+    context.before_price = 00
     context.score = 0
     context.learn_count = 0
     context.has_ping = False
-    context.d3qn_agent = Agent(lr=0.001, discount_factor=0.99, num_actions=2, epsilon=0, batch_size=64, input_dim=[14])
+    context.d3qn_agent = Agent(lr=0.001, discount_factor=0.99, num_actions=2, epsilon=0, batch_size=640, input_dim=[14])
 
     #load model
-    context.d3qn_agent.q_net = tf.keras.models.load_model('saved_networks/d3qn_model200')
+    context.d3qn_agent.q_net = tf.keras.models.load_model('saved_networks/d3qn_model30')
 
     curr_time=time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
     subscribe(symbols=context.symbol, frequency='tick')
@@ -149,6 +149,15 @@ def find_highest(kLineList):
             highest = anakline['high']
     return highest
 
+def hcf(myList):  # 计算最大公约数
+    removeZeroList = list(filter(lambda i: i != 0, myList))
+    if len(removeZeroList) == 0:
+        return 1
+    smaller = min(removeZeroList)
+    for i in reversed(range(1, int(smaller)+1)):
+        if list(filter(lambda j: j%i!=0, myList)) == []:
+            return i
+
 def get_state(now_price):
     #7个 k 线最高最低价
     useItemCount = 7
@@ -162,6 +171,23 @@ def get_state(now_price):
         nowItem = context.anaklines[i - useItemCount]
         retList.append(maxPrice - nowItem['high'])
         retList.append(maxPrice - nowItem['low'])
+
+    # 价格四舍五入到5的倍数
+    for index in range(len(retList)):
+        price = retList[index]
+        leftPrice = price % 10
+        if leftPrice >= 5:
+            retList[index] = retList[index] - leftPrice + 10
+        else:
+            retList[index] = retList[index] - leftPrice
+
+    # 找出最大公约数
+    divisor = hcf(retList)
+
+    # 除以，拿到比例
+    for index in range(len(retList)):
+        retList[index] = retList[index] / divisor
+
     return tuple(retList)
 
 def get_reward(now_price):
@@ -215,8 +241,13 @@ def should_ping_cang(now_price):
     positions = context.account().positions(symbol=context.symbol, side=None)
     if positions:
         positionPrice = positions[0].price
-        if now_price - positionPrice > ying or positionPrice - now_price > kui:
+        if now_price - positionPrice > ying:
+            print("ying")
             return True
+        elif positionPrice - now_price > kui:
+            print("kui")
+            return True
+
     return False
 
 def should_learning():
@@ -233,7 +264,7 @@ if __name__ == '__main__':
         backtest_start_time='2019-06-06 09:00:00',
         backtest_end_time='2019-10-24 16:00:00',
         backtest_adjust=ADJUST_PREV,
-        backtest_initial_cash=500000000,
+        backtest_initial_cash=100000000,
         backtest_commission_ratio=0.0001,
         backtest_slippage_ratio=0.0001)
 
@@ -247,7 +278,4 @@ def save_info(cash_history, count_ping, count_win):
 
 def save_model(count):
     return
-    if count % 50 == 0:
-        context.d3qn_agent.q_net.save(("saved_networks/d3qn_model{0}".format(count)))
-        context.d3qn_agent.q_net.save_weights(("saved_networks/d3qn_model{0}/net_weights{0}.h5".format(count)))
 

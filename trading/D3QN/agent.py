@@ -56,6 +56,9 @@ class Agent:
             _, actions = self.q_net(state)
             action = tf.math.argmax(actions, axis=1).numpy()[0]
 
+            # action = 0
+            # if actions.numpy()[0][1] > 0:
+            #     action = 1
         return action
 
     def train(self):

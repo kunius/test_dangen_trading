@@ -73,7 +73,7 @@ class myThread (threading.Thread):
                 # with open('future-v0-q-learning.pickle', 'wb') as f:
                 #     pickle.dump(dict(context.Q), f)
                 #     print('model saved: ', datetime.datetime.now())
-
+                data = self.changeData(data, 2)
                 count_while = count_while + 1
                 print("count_while: ", count_while)
                 mainpy.save_info(cash_history, count_ping, count_win)
@@ -127,6 +127,11 @@ class myThread (threading.Thread):
         cursor.close()
         con.close()
         return retList
+
+    def changeData(self, data, count):
+        #remove two minutes every time
+        return data[count:]
+
 
 def clean():
     context.time_from = ''

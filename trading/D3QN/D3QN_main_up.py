@@ -26,7 +26,7 @@ def init(context):
     context.done = False
     context.isTest = False
 
-    context.start_data = datetime.datetime.strptime('2016-01-01', '%Y-%m-%d')
+    context.start_data = datetime.datetime.strptime('2014-01-01', '%Y-%m-%d')
     context.end_data = datetime.datetime.strptime('2020-01-01', '%Y-%m-%d')
 
     account_id='e2310149-e322-11e9-a20c-00163e0a4100'
@@ -39,7 +39,7 @@ def init(context):
     context.score = 0
     context.learn_count = 0
     context.has_ping = False
-    context.d3qn_agent = Agent(lr=0.001, discount_factor=0.99, num_actions=2, epsilon=1.0, batch_size=64, input_dim=[14])
+    context.d3qn_agent = Agent(lr=0.001, discount_factor=0.99, num_actions=2, epsilon=1.0, batch_size=2560, input_dim=[14])
 
     curr_time=time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
     subscribe(symbols=context.symbol, frequency='tick')
@@ -145,6 +145,15 @@ def find_highest(kLineList):
             highest = anakline['high']
     return highest
 
+def hcf(myList):  # 计算最大公约数
+    removeZeroList = list(filter(lambda i: i != 0, myList))
+    if len(removeZeroList) == 0:
+        return 1
+    smaller = min(removeZeroList)
+    for i in reversed(range(1, int(smaller)+1)):
+        if list(filter(lambda j: j%i!=0, myList)) == []:
+            return i
+
 def get_state(now_price):
     #7个 k 线最高最低价
     useItemCount = 7
@@ -158,6 +167,23 @@ def get_state(now_price):
         nowItem = context.anaklines[i - useItemCount]
         retList.append(maxPrice - nowItem['high'])
         retList.append(maxPrice - nowItem['low'])
+
+    # 价格四舍五入到10的倍数
+    for index in range(len(retList)):
+        price = retList[index]
+        leftPrice = price % 10
+        if leftPrice >= 5:
+            retList[index] = retList[index] - leftPrice + 10
+        else:
+            retList[index] = retList[index] - leftPrice
+
+    # 找出最大公约数
+    divisor = hcf(retList)
+
+    # 除以，拿到比例
+    for index in range(len(retList)):
+        retList[index] = retList[index] / divisor
+
     return tuple(retList)
 
 def get_reward(now_price):
