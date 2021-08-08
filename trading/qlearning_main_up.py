@@ -22,6 +22,11 @@ def init(context):
     context.time_high = 0
     context.time_low = sys.maxsize
     context.still_count = 0
+    context.done = False
+    context.isTest = False
+
+    context.start_data = datetime.datetime.strptime('2010-01-01', '%Y-%m-%d')
+    context.end_data = datetime.datetime.strptime('2019-01-01', '%Y-%m-%d')
 
     account_id='e2310149-e322-11e9-a20c-00163e0a4100'
     context.symbol = 'RB9999'
@@ -34,6 +39,7 @@ def init(context):
     context.learn_count = 0
     context.has_ping = False
     context.Q = defaultdict(lambda: [0, 0])
+    context.QCount = defaultdict(lambda: [0, 0])
 
     curr_time=time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
     subscribe(symbols=context.symbol, frequency='tick')
@@ -106,8 +112,12 @@ def start_qlearning(now_price):
         reward = reward - 40 - 20
 
 
-    context.Q[before_state][before_action] = (1 - lr) * context.Q[before_state][before_action] + lr * (reward + factor * max(context.Q[now_state]))
-    context.score += reward
+    #context.Q[before_state][before_action] = (1 - lr) * context.Q[before_state][before_action] + lr * (reward + factor * max(context.Q[now_state]))
+
+    context.Q[before_state][before_action] = (context.Q[before_state][before_action] * context.QCount[before_state][before_action] + reward) / \
+                                             (context.QCount[before_state][before_action] + 1)
+    context.QCount[before_state][before_action] = context.QCount[before_state][before_action] + 1
+    #context.score += reward
 
     a = get_max_action(now_state)
     implement_as_action(a, now_price)
@@ -138,6 +148,15 @@ def find_highest(kLineList):
             highest = anakline['high']
     return highest
 
+def hcf(myList):  # 计算最大公约数
+    removeZeroList = list(filter(lambda i: i != 0, myList))
+    if len(removeZeroList) == 0:
+        return 1
+    smaller = min(removeZeroList)
+    for i in reversed(range(1, int(smaller)+1)):
+        if list(filter(lambda j: j%i!=0, myList)) == []:
+            return i
+
 def get_state(now_price):
     #7个 k 线最高最低价
     useItemCount = 7
@@ -149,8 +168,25 @@ def get_state(now_price):
 
     for i in range(useItemCount):
         nowItem = context.anaklines[i - useItemCount]
-        retList.append(round(nowItem['high'] / maxPrice, 2))
-        retList.append(round(nowItem['low'] / maxPrice, 2))
+        retList.append(maxPrice - nowItem['high'])
+        retList.append(maxPrice - nowItem['low'])
+
+    # 价格四舍五入到5的倍数
+    for index in range(len(retList)):
+        price = retList[index]
+        leftPrice = price % 5
+        if leftPrice >= 3:
+            retList[index] = retList[index] - leftPrice + 5
+        else:
+            retList[index] = retList[index] - leftPrice
+
+    # 找出最大公约数
+    divisor = hcf(retList)
+
+    # 除以，拿到比例
+    for index in range(len(retList)):
+        retList[index] = retList[index] / divisor
+
     return tuple(retList)
 
 def get_reward(now_price):
@@ -170,11 +206,12 @@ def get_reward2(now_price):
 
 
 def get_max_action(now_state):
-    a = np.argmax(context.Q[now_state])
-    # 训练刚开始，多一点随机性，以便有更多的状态
-    if np.random.random() > context.learn_count * 3 / 50:
-        a = np.random.choice([0, 1])
-    return a
+    # a = np.argmax(context.Q[now_state])
+    # # 训练刚开始，多一点随机性，以便有更多的状态
+    # if np.random.random() > context.learn_count * 3 / 50:
+    #     a = np.random.choice([0, 1])
+    # return a
+    return np.random.choice([0, 1])
 
 def implement_as_action(action, now_price):
     if action == 1: #买开
@@ -182,7 +219,7 @@ def implement_as_action(action, now_price):
                             position_effect=PositionEffect_Open,
                             price=now_price,
                             order_duration=OrderDuration_Unknown, order_qualifier=OrderQualifier_Unknown)
-        print("买开")
+        print("%s 买开" % (context.time_to))
 
 def ping_position():
     positions = context.account().positions(symbol=context.symbol, side=None)
@@ -192,11 +229,11 @@ def ping_position():
         if positions[0].side == PositionSide_Long:  # 多单
             order_target_percent(symbol=context.symbol, percent=0, order_type=OrderType_Market,
                                      position_side=PositionSide_Long)  # 平仓
-            print("平完多单")
+            print("%s 平完多单" %(context.time_to))
         else:  # 空单
             order_target_percent(symbol=context.symbol, percent=0, order_type=OrderType_Market,
                                  position_side=PositionSide_Short)  # 平仓
-            print("平完空单")
+            print("%s 平完空单" %(context.time_to))
 
 def should_ping_cang(now_price):
     ying = 40
@@ -222,7 +259,7 @@ if __name__ == '__main__':
         backtest_start_time='2019-06-06 09:00:00',
         backtest_end_time='2019-10-24 16:00:00',
         backtest_adjust=ADJUST_PREV,
-        backtest_initial_cash=1000000,
+        backtest_initial_cash=500000000,
         backtest_commission_ratio=0.0001,
         backtest_slippage_ratio=0.0001)
 
@@ -234,8 +271,11 @@ def save_info(cash_history, count_ping, count_win):
                         + " shouxufei: " + str(context.account().shouxufei) + " score:" + str(context.score) + '\r'
             f.write(writh_str)
 
-def save_model():
-    return
-    with open('future-v0-q-learning.pickle', 'wb') as f:
-        pickle.dump(dict(context.Q), f)
-        print('model saved: ', datetime.datetime.now())
+def save_model(count):
+    if count % 10 == 0:
+        with open('future-v0-q-learning.pickle', 'wb') as f:
+            pickle.dump(dict(context.Q), f)
+            print('model saved: ', datetime.datetime.now())
+        with open('future-v0-q-learning_count.pickle', 'wb') as f:
+            pickle.dump(dict(context.QCount), f)
+            print('count model saved: ', datetime.datetime.now())

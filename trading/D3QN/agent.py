@@ -77,8 +77,8 @@ class Agent:
         max_actions = tf.math.argmax(actions, axis=1)
 
         for idx in range(done_batch.shape[0]):
-            q_target[idx, action_batch[idx]] = reward_batch[idx] + self.discount_factor*q_next[idx, max_actions[idx]] *\
-                                               (1-int(done_batch[idx]))
+            #q_target[idx, action_batch[idx]] = reward_batch[idx] + self.discount_factor*q_next[idx, max_actions[idx]] * (1-int(done_batch[idx]))
+            q_target[idx, action_batch[idx]] = (reward_batch[idx] + q_target[idx, action_batch[idx]]) / 2
 
         self.q_net.train_on_batch(state_batch, q_target)
         self.epsilon = self.epsilon - self.epsilon_decay if self.epsilon > self.epsilon_final else self.epsilon_final

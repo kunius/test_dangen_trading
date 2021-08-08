@@ -27,8 +27,8 @@ def init(context):
     context.done = False
     context.isTest = True
 
-    context.start_data = datetime.datetime.strptime('2020-01-01', '%Y-%m-%d')
-    context.end_data = datetime.datetime.strptime('2021-01-01', '%Y-%m-%d')
+    context.start_data = datetime.datetime.strptime('2019-01-01', '%Y-%m-%d')
+    context.end_data = datetime.datetime.strptime('2023-01-01', '%Y-%m-%d')
 
     account_id='e2310149-e322-11e9-a20c-00163e0a4100'
     context.symbol = 'RB9999'
@@ -43,7 +43,7 @@ def init(context):
     context.d3qn_agent = Agent(lr=0.001, discount_factor=0.99, num_actions=2, epsilon=0, batch_size=640, input_dim=[14])
 
     #load model
-    context.d3qn_agent.q_net = tf.keras.models.load_model('saved_networks/d3qn_model30')
+    context.d3qn_agent.q_net = tf.keras.models.load_model('saved_networks/d3qn_model1340')
 
     curr_time=time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
     subscribe(symbols=context.symbol, frequency='tick')
